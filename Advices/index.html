@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Conselhos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="container mx-auto p-6 bg-white rounded-lg shadow-lg max-w-md text-center">
+        <h1 class="text-2xl font-bold mb-6">Conselho do Dia</h1>
+        
+        <div id="adviceBox" class="mb-6 text-xl italic min-h-[100px] flex items-center justify-center">
+            Carregando conselho...
+        </div>
+        
+        <button id="generateBtn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition">
+            Novo Conselho
+        </button>
+    </div>
+
+    <script>
+        const adviceBox = document.getElementById('adviceBox');
+        const generateBtn = document.getElementById('generateBtn');
+
+        const manualTranslations = {
+            "Don't worry about money. The best things in life are free.": "Não se preocupe com dinheiro. As melhores coisas da vida são gratuitas.",
+            "If it doesn't add up, start subtracting.": "Se não está funcionando, comece a eliminar o que não é essencial.",
+            "Listen to your heart, it knows everything.": "Escute seu coração, ele sabe tudo."
+        };
+
+        async function fetchAdvice() {
+            try {
+                const response = await fetch('https://api.adviceslip.com/advice');
+                const data = await response.json();
+                const originalAdvice = data.slip.advice;
+
+                // Primeiro, tenta tradução manual
+                if (manualTranslations[originalAdvice]) {
+                    adviceBox.textContent = manualTranslations[originalAdvice];
+                    return;
+                }
+
+                // Se não houver tradução manual, usa tradução automática
+                const translatedAdvice = await translateAdvice(originalAdvice);
+                adviceBox.textContent = translatedAdvice;
+            } catch (error) {
+                adviceBox.textContent = 'Erro ao buscar conselho';
+                console.error(error);
+            }
+        }
+
+        async function translateAdvice(text) {
+            const translationServices = [
+                async () => {
+                    const response = await fetch('https://libretranslate.de/translate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({q: text, source: 'en', target: 'pt'})
+                    });
+                    const data = await response.json();
+                    return data.translatedText;
+                },
+                async () => {
+                    const response = await fetch('https://translate.argocd.org/translate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({q: text, source: 'en', target: 'pt'})
+                    });
+                    const data = await response.json();
+                    return data.translatedText;
+                }
+            ];
+
+            for (let service of translationServices) {
+                try {
+                    return await service();
+                } catch (error) {
+                    console.warn('Translation service failed', error);
+                }
+            }
+
+            // Se todos os serviços falharem, retorna o texto original
+            return text;
+        }
+
+        generateBtn.addEventListener('click', fetchAdvice);
+        fetchAdvice();
+    </script>
+</body>
+</html>
