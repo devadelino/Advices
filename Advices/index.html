@@ -34,13 +34,13 @@
                 const data = await response.json();
                 const originalAdvice = data.slip.advice;
 
-                // Primeiro, tenta tradução manual
+                // Tenta tradução manual
                 if (manualTranslations[originalAdvice]) {
                     adviceBox.textContent = manualTranslations[originalAdvice];
                     return;
                 }
 
-                // Se não houver tradução manual, usa tradução automática
+                // Tradução auto caso a anterior n dê. Evita erro
                 const translatedAdvice = await translateAdvice(originalAdvice);
                 adviceBox.textContent = translatedAdvice;
             } catch (error) {
@@ -79,7 +79,7 @@
                 }
             }
 
-            // Se todos os serviços falharem, retorna o texto original
+            // No caso de tudo der errado manda de volta texto original. Necessita improvement (feedback)
             return text;
         }
 
